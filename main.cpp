@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <sys/stat.h>
 #include <cstring>
 #include <iostream>
 #include <netcdf>
@@ -7,12 +9,6 @@
 
 using namespace std;
 
-
-
-void printErrMsg() {
-    cout << "Invalid argument:"
-         << "You should provide input and output file path!" << endl;
-}
 void printUsage() {
     cout << "Usage:\n"
          << "copyNCGlobalVar <input file path> <output file path>" << endl;
@@ -22,16 +18,32 @@ void checkArgument(int argc) {
     if (argc == 3) {
         return;
     }
-    if (argc != 1) {
-        printErrMsg();
+    if (argc == 1) {
+        printUsage();
+        exit(1);
     }
-    printUsage();
+    if (argc != 1) {
+        cout << "Invalid argument number. You should provide input and output file path!" << endl;
+        printUsage();
+        exit(1);
+    }
+    
 }
 
+inline bool ifFileExists (const std::string& name) {
+    struct stat buffer;
+    return (stat (name.c_str(), &buffer) == 0); 
+}
 
-void getValue(netCDF::NcGroupAtt ncAtt) {
-    vector<string> typeNames = {"user_type", "byte", "char", "short", "int", "float", "double", "ubyte", "ushort", "uint", "int64", "uint64", "string"};
-    
+inline void checkIfIOFileExist(char *argv[]) {
+    if (!ifFileExists(argv[1])) {
+        cout << "File: \"" << argv[1] << "\" does not exist!" << endl;
+        exit(1);
+    }
+    if (!ifFileExists(argv[2])) {
+        cout << "File: " << argv[1] << " does not exist!" << endl;
+        exit(1);
+    }
 }
 
 template <typename T>
@@ -103,25 +115,6 @@ void doTheRealThing() {
     outputFile.close();
 }
 
-void checkType() {
-    cout << netCDF::NcByte().getSize() << endl;
-    cout << netCDF::NcChar().getSize() << endl;
-    cout << netCDF::NcShort().getId() << endl;
-    cout << netCDF::NcInt().getId() << endl;
-    cout << netCDF::NcFloat().getId() << endl;
-    cout << netCDF::NcDouble().getId() << endl;
-    cout << netCDF::NcUbyte().getSize() << endl;
-    cout << netCDF::NcUshort().getId() << endl;
-    cout << netCDF::NcUint().getId() << endl;
-    cout << netCDF::NcInt64().getId() << endl;
-    cout << netCDF::NcUint64().getId() << endl;
-    cout << netCDF::NcString().getName() << endl;
-    cout << netCDF::NcVlenType().getName() << endl;
-    cout << netCDF::NcOpaqueType().getId() << endl;
-    cout << netCDF::NcEnumType().getId() << endl;
-    cout << netCDF::NcCompoundType().getId() << endl;
-}
-
 void compareCharAndString() {
 
     string ncFileDir = "/mnt/e/p_learn/cpp_learn/copyNCGlobalVar/testData/";
@@ -161,16 +154,11 @@ void compareCharAndString() {
 
 int main(int argc, char *argv[]) {
 
-    // checkArgument(argc);
-    // checkType();
-    // compareCharAndString();
+    checkArgument(argc);
+    checkIfIOFileExist(argv);
     
     doTheRealThing();
-    // cout << sizeof(char) << endl;
-    // cout << sizeof(short) << endl;
-    // cout << sizeof(int) << endl;
-    // cout << sizeof(long) << endl;
-    // cout << sizeof(long long) << endl;
-    // cout << sizeof(unsigned long long) << endl;
-    // cout << netCDF::NcByte().get() << endl;
+
+    cout << "done." << endl;
+    
 }
