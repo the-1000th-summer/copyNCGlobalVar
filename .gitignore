@@ -1,0 +1,8 @@
+# vscode
+/.vscode/
+
+# build file
+/build/
+
+# cache
+/.cache/
