@@ -2,6 +2,7 @@
 #include <iostream>
 #include <netcdf>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 
 using namespace std;
@@ -33,6 +34,13 @@ void getValue(netCDF::NcGroupAtt ncAtt) {
     
 }
 
+template <typename T>
+inline void getValAndWriteToFile(netCDF::NcFile &oFile, const netCDF::NcGroupAtt &ncAtt) {
+    T val;
+    ncAtt.getValues(&val);
+    oFile.putAtt(ncAtt.getName(), ncAtt.getType(), val);
+}
+
 void doTheRealThing() {
     string ncFileDir = "/mnt/e/p_learn/cpp_learn/copyNCGlobalVar/testData/";
     string ncFilePath = ncFileDir + "so2_0.16_101902.nc";
@@ -40,94 +48,53 @@ void doTheRealThing() {
     netCDF::NcFile fileWithGlobalVar(ncFilePath, netCDF::NcFile::read);
     netCDF::NcFile outputFile(outputFilePath, netCDF::NcFile::write);
 
-    // auto aa = fileWithGlobalVar.getAtt("TITLE");
+    auto ncAtts = fileWithGlobalVar.getAtts();
 
-
-    auto a = fileWithGlobalVar.getAtts();
-
-    auto map_it = a.cbegin();
-    while (map_it != a.cend()) {
-        string ncAttName = map_it->first;
-        cout << ncAttName << ": ";
+    auto map_it = ncAtts.cbegin();
+    while (map_it != ncAtts.cend()) {
         auto ncAtt = map_it->second;
-        auto ncAttType = ncAtt.getType();
-        cout << ncAttType.getName() << endl;
+        auto ncAttTypeClass = ncAtt.getType().getTypeClass();
         
-        if (ncAttType.getName() == "byte") {  // byte占用1字节空间
-            char val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType == netCDF::NcType::nc_CHAR) {   // 所有字符串类型都为char，即使用string写入文件，读出来的仍旧为char
+        switch (ncAttTypeClass) {
+        case netCDF::NcType::nc_INT:
+            getValAndWriteToFile<int>(outputFile, ncAtt);
+            break;
+        case netCDF::NcType::nc_FLOAT:
+            getValAndWriteToFile<float>(outputFile, ncAtt);
+            break;
+        case netCDF::NcType::nc_CHAR: case netCDF::NcType::nc_STRING: {
             string val;
             ncAtt.getValues(val);
-            outputFile.putAtt(ncAttName, val);
+            outputFile.putAtt(ncAtt.getName(), val);
+            break;
         }
-        else if (ncAttType.getName() == "short") {
-            short val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType.getName() == "int") {
-            int val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType.getName() == "float") {
-            float val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType.getName() == "double") {
-            double val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType.getName() == "ubyte") {
-            unsigned char val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType.getName() == "ushort") {
-            ushort val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType.getName() == "uint") {
-            uint val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType.getName() == "int64") {
-            long long val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType.getName() == "uint64") {
-            unsigned long long val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, ncAttType, val);
-        }
-        else if (ncAttType.getName() == "string") {
-            string val;
-            ncAtt.getValues(&val);
-            outputFile.putAtt(ncAttName, val);
-        }
-        else {
+        case netCDF::NcType::nc_DOUBLE:
+            getValAndWriteToFile<double>(outputFile, ncAtt);
+            break;
+        case netCDF::NcType::nc_SHORT:
+            getValAndWriteToFile<short>(outputFile, ncAtt);
+            break;
+        case netCDF::NcType::nc_BYTE:
+            getValAndWriteToFile<char>(outputFile, ncAtt);
+            break;
+        case netCDF::NcType::nc_UBYTE:
+            getValAndWriteToFile<unsigned char>(outputFile, ncAtt);
+            break;
+        case netCDF::NcType::nc_USHORT:
+            getValAndWriteToFile<ushort>(outputFile, ncAtt);
+            break;
+        case netCDF::NcType::nc_UINT:
+            getValAndWriteToFile<uint>(outputFile, ncAtt);
+            break;
+        case netCDF::NcType::nc_INT64:
+            getValAndWriteToFile<long long>(outputFile, ncAtt);
+            break;
+        case netCDF::NcType::nc_UINT64:
+            getValAndWriteToFile<unsigned long long>(outputFile, ncAtt);
+            break;
+        default:
             throw "unknown type!";
         }
-
-        
-        
-        // cout << map_it->second.getType().getId() << endl;
-        // cout << map_it->second.getType().getSize() << endl;
-
-        
-        // printValue(map_it->second);
-        // string aa;
-        // (map_it->second).getValues(&aa);
-        // cout << aa << endl;
-        // printValue<typename T>(netCDF::NcGroupAtt t)
         
         ++map_it;
     }
@@ -196,9 +163,9 @@ int main(int argc, char *argv[]) {
 
     // checkArgument(argc);
     // checkType();
-    compareCharAndString();
+    // compareCharAndString();
     
-    // doTheRealThing();
+    doTheRealThing();
     // cout << sizeof(char) << endl;
     // cout << sizeof(short) << endl;
     // cout << sizeof(int) << endl;
